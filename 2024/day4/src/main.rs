@@ -46,10 +46,52 @@ fn part_1(chars: Vec<Vec<char>>) -> usize {
     return total;
 }
 
+fn part_2(chars: Vec<Vec<char>>) -> usize {
+    const X_MAS: [[char; 3]; 12] = [
+        ['M', '.', 'M'],
+        ['.', 'A', '.'],
+        ['S', '.', 'S'],
+
+        ['S', '.', 'M'],
+        ['.', 'A', '.'],
+        ['S', '.', 'M'],
+
+        ['S', '.', 'S'],
+        ['.', 'A', '.'],
+        ['M', '.', 'M'],
+
+        ['M', '.', 'S'],
+        ['.', 'A', '.'],
+        ['M', '.', 'S'],
+    ];
+
+    let check = |x: usize, y: usize, offset: usize| -> bool {
+        chars[y  ][x  ] == X_MAS[0+offset][0] &&
+        chars[y  ][x+2] == X_MAS[0+offset][2] &&
+        chars[y+1][x+1] == X_MAS[1+offset][1] &&
+        chars[y+2][x  ] == X_MAS[2+offset][0] &&
+        chars[y+2][x+2] == X_MAS[2+offset][2]
+    };
+
+    let len = chars.len();
+    let mut total = 0;
+    for x in 0..len-2 {
+        for y in 0..len-2 {
+            for offset in 0..4 {
+                if check(x, y, offset * 3) {
+                    total += 1;
+                }
+            }
+        }
+    }
+    return total;
+}
+
 fn main() {
     let filename = args().skip(1).next().unwrap();
     let input = read_to_string(File::open(filename).unwrap()).unwrap();
 
     let chars = parse(input);
-    println!("part 1: {}", part_1(chars));
+    println!("part 1: {}", part_1(chars.clone()));
+    println!("part 2: {}", part_2(chars));
 }
