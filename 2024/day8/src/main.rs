@@ -10,7 +10,7 @@ type Freq = char;
 type PosLists = HashMap<Freq, Vec<Pos>>;
 type MapSize = (isize, isize);
 
-fn antinode_of(pa: Pos, pb: Pos, (map_x, map_y): MapSize) -> Option<Pos> {
+fn model_1(pa: Pos, pb: Pos, (map_x, map_y): MapSize) -> Option<Pos> {
     let antinode = pa + (pa - pb);
     if antinode.is_inside(map_x, map_y) {
         return Some(antinode);
@@ -18,8 +18,19 @@ fn antinode_of(pa: Pos, pb: Pos, (map_x, map_y): MapSize) -> Option<Pos> {
     return None;
 }
 
-fn part_1(lists: &PosLists, map_size: MapSize) -> usize {
-    let mut antinodes = HashSet::new();
+fn model_2(mut pa: Pos, pb: Pos, (map_x, map_y): MapSize) -> Vec<Pos> {
+    let mut antinodes = vec![];
+    let diff = pa - pb;
+    while pa.is_inside(map_x, map_y) {
+        antinodes.push(pa);
+        pa = pa + diff;
+    }
+    antinodes
+}
+
+fn solve(lists: &PosLists, map_size: MapSize) {
+    let mut model_1_antinodes = HashSet::new();
+    let mut model_2_antinodes = HashSet::new();
     for list in lists.values() {
         if list.len() < 2 {
             continue;
@@ -27,16 +38,23 @@ fn part_1(lists: &PosLists, map_size: MapSize) -> usize {
 
         for (i, &pa) in list[..list.len()-1].iter().enumerate() {
             for &pb in list[i+1..list.len()].iter() {
-                if let Some(antinode) = antinode_of(pa, pb, map_size) {
-                    antinodes.insert(antinode);
+                if let Some(antinode) = model_1(pa, pb, map_size) {
+                    model_1_antinodes.insert(antinode);
                 }
-                if let Some(antinode) = antinode_of(pb, pa, map_size) {
-                    antinodes.insert(antinode);
+                if let Some(antinode) = model_1(pb, pa, map_size) {
+                    model_1_antinodes.insert(antinode);
+                }
+                for antinode in model_2(pa, pb, map_size) {
+                    model_2_antinodes.insert(antinode);
+                }
+                for antinode in model_2(pb, pa, map_size) {
+                    model_2_antinodes.insert(antinode);
                 }
             }
         }
     }
-    antinodes.len()
+    println!("part 1: {}", model_1_antinodes.len());
+    println!("part 2: {}", model_2_antinodes.len());
 }
 
 fn main() {
@@ -44,5 +62,5 @@ fn main() {
     let input = read_to_string(File::open(filename).unwrap()).unwrap();
 
     let (lists, map_size) = parse(input);
-    println!("part 1: {}", part_1(&lists, map_size));
+    solve(&lists, map_size);
 }
