@@ -15,20 +15,21 @@ fn parse(input: String) -> Vec<Equation> {
         .collect()
 }
 
-fn part_1(equations: &Vec<Equation>) -> u64 {
+fn solve<F>(equations: &Vec<Equation>, num_of_ops: u32, f: F) -> u64
+where
+    F: Fn(u32, u64, u64) -> u64
+{
     equations.iter()
         .filter_map(|(target, numbers)| {
-            for mut op in 0..(1 << (numbers.len() - 1)) {
-                let mut result = numbers[0];
+            // Select operators based on a counter
+            for mut cnt in 0..num_of_ops.pow(numbers.len() as u32 - 1) {
+                let mut acc = numbers[0];
                 for i in 1..numbers.len() {
-                    if op & 1 == 0 {
-                        result += numbers[i];
-                    } else {
-                        result *= numbers[i];
-                    }
-                    op = op >> 1;
+                    let op = cnt % num_of_ops;
+                    acc = f(op, acc, numbers[i]);
+                    cnt /= num_of_ops;
                 }
-                if result == *target {
+                if acc == *target {
                     return Some(*target);
                 }
             }
@@ -37,33 +38,31 @@ fn part_1(equations: &Vec<Equation>) -> u64 {
         .fold(0, |acc, v| acc + v)
 }
 
+fn part_1(equations: &Vec<Equation>) -> u64 {
+    solve(equations, 2, |op, acc, number| {
+        if op == 0 {
+            acc + number
+        } else {
+            acc * number
+        }
+    })
+}
+
 fn part_2(equations: &Vec<Equation>) -> u64 {
-    equations.iter()
-        .filter_map(|(target, numbers)| {
-            for mut op in 0..3u32.pow(numbers.len() as u32 - 1) {
-                let mut result = numbers[0];
-                for i in 1..numbers.len() {
-                    match op % 3 {
-                        0 => result += numbers[i],
-                        1 => result *= numbers[i],
-                        _ => {
-                            let mut number = numbers[i];
-                            while number != 0 {
-                                result *= 10;
-                                number /= 10;
-                            }
-                            result += numbers[i];
-                        },
-                    }
-                    op /= 3;
+    solve(equations, 3, |op, mut acc, number| {
+        match op % 3 {
+            0 => acc + number,
+            1 => acc * number,
+            _ => {
+                let mut shifter = number;
+                while shifter != 0 {
+                    acc *= 10;
+                    shifter /= 10;
                 }
-                if result == *target {
-                    return Some(*target);
-                }
-            }
-            return None;
-        })
-        .fold(0, |acc, v| acc + v)
+                acc + number
+            },
+        }
+    })
 }
 
 fn main() {
