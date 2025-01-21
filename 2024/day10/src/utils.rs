@@ -9,7 +9,7 @@ pub struct Pos {
 }
 
 impl Pos {
-    pub fn is_inside<T>(&self, map: &Map<T>) -> bool {
+    pub fn is_inside(&self, map: &Map) -> bool {
         self.x >= 0 && self.y >= 0 && self.x < map.len() as _ && self.y < map[0].len() as _
     }
 }

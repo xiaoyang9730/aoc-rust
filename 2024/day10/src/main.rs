@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::env::args;
 use std::fs::File;
 use std::io::read_to_string;
@@ -6,74 +6,92 @@ use std::io::read_to_string;
 mod utils;
 use utils::*;
 
-type Map<T> = Vec<Vec<T>>;
+type Map = Vec<Vec<i8>>;
 
+#[derive(Default)]
 struct Solution {
-    map: Map<i8>,
+    map: Map,
     trail_heads: Vec<Pos>,
 }
 
 impl Solution {
     const DIRS: [Pos; 4] = [
-        Pos {x: -1, y:  0},
-        Pos {x:  0, y: -1},
-        Pos {x:  1, y:  0},
-        Pos {x:  0, y:  1},
+        Pos {x: -1, y:  0}, Pos {x:  0, y: -1},
+        Pos {x:  1, y:  0}, Pos {x:  0, y:  1},
     ];
 
     fn new(input: String) -> Self {
-        let map = input.lines()
-            .map(|l| l.chars().map(|c| c.to_digit(10).unwrap() as _).collect::<Vec<_>>())
-            .collect::<Map<_>>();
-
-        let mut trail_heads = vec![];
-        for x in 0..map.len() {
-            for y in 0..map[0].len() {
-                if map[x][y] != 0 {
-                    continue;
-                }
-                trail_heads.push(Pos { x: x as _, y: y as _ });
-            }
-        }
-        
-        Self { map, trail_heads }
+        Self::default()
+            .parse_map(input)
+            .collect_trail_heads()
     }
 
-    fn score(&self, trail_head: Pos) -> u32 {
-        let mut total = 0;
-        let (mut c_track, mut n_track) = (HashSet::new(), HashSet::new());
-        c_track.insert(trail_head);
-
-        while !c_track.is_empty() {
-            for &p in c_track.iter() {
-                let c_height = self.map[p.x as usize][p.y as usize];
-                if c_height == 9 {
-                    total += 1;
-                    continue;
-                }
-
-                for dir in Self::DIRS {
-                    let np = p + dir;
-                    if !np.is_inside(&self.map) {
-                        continue;
-                    }
-
-                    let n_height = self.map[np.x as usize][np.y as usize];
-                    if n_height - c_height != 1 {
-                        continue;
-                    }
-
-                    n_track.insert(np);
-                }
-            }
-            c_track.clear();
-            n_track.drain().for_each(|np| { c_track.insert(np); });
-        }
-        total
+    fn parse_map(mut self, input: String) -> Self {
+        self.map = input.lines()
+            .map(|l| l.chars().map(|c| c.to_digit(10).unwrap_or(10) as _).collect::<Vec<_>>())
+            .collect::<Map>();
+        self
     }
 
-    fn part_1(&self) -> u32 {
-        self.trail_heads.iter().map(|&th| self.score(th)).fold(0, u32::wrapping_add)
+    fn collect_trail_heads(mut self) -> Self {
+        for x in 0..self.map.len() {
+            for y in 0..self.map[0].len() {
+                if self.map[x][y] != 0 {
+                    continue;
+                }
+                self.trail_heads.push(
+                    Pos { x: x as _, y: y as _ }
+                );
+            }
+        }
+        self
+    }
+
+    fn trails(&self, p: Pos) -> HashMap<Pos, usize> {
+        let height = self.map[p.x as usize][p.y as usize];
+        if height == 9 {
+            let mut ret = HashMap::new();
+            ret.insert(p, 1);
+            return ret;
+        }
+
+        let mut sum = HashMap::new();
+        for dir in Self::DIRS {
+            let next_p = p + dir;
+            if !next_p.is_inside(&self.map) {
+                continue;
+            }
+
+            let next_height = self.map[next_p.x as usize][next_p.y as usize];
+            if next_height - height != 1 {
+                continue;
+            }
+
+            for (end_p, increment) in self.trails(next_p) {
+                if let Some(count) = sum.get_mut(&end_p) {
+                    *count += increment;
+                } else {
+                    sum.insert(end_p, increment);
+                }
+            }
+        }
+        sum
+    }
+
+    fn part_1(&self) -> usize {
+        self.trail_heads.iter()
+            .map(|&p| self.trails(p).len())
+            .fold(0, |acc, v| acc + v)
+    }
+
+    fn part_2(&self) -> usize {
+        self.trail_heads.iter()
+            .map(|&p| {
+                self.trails(p).iter()
+                    .map(|(_end_p, count)| count)
+                    .fold(0, |acc, v| acc + v)
+            })
+            .fold(0, |acc, v| acc + v)
     }
 }
 
@@ -83,4 +101,5 @@ fn main() {
 
     let solution = Solution::new(input);
     println!("part 1: {}", solution.part_1());
+    println!("part 2: {}", solution.part_2());
 }
