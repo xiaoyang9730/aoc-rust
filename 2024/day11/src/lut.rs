@@ -5,6 +5,8 @@ use crate::Stones;
 use crate::blink;
 use crate::utils;
 
+use LutBlinkResult::*;
+
 pub static mut LUT: Lut = Lut { step: 0, table: Vec::new() };
 
 pub struct Lut {
@@ -45,6 +47,45 @@ impl Lut {
             })
             .collect()
     }
+
+    pub fn blink_one(&self, stone: usize) -> LutBlinkResult {
+        if let Some(lut_ret) = self.table.get(stone) {
+            return Hit(lut_ret);
+        }
+        let mut blinked = vec![stone];
+        for _ in 0..self.step {
+            blinked = blink::all(&blinked);
+        }
+        Missed(blinked)
+    }
+
+    // pub fn blink_all(&self, stones: &Stones) -> Stones {
+    //     let mut blinked = vec![];
+    //     for &stone in stones {
+    //         blinked.extend(self.blink_one(stone).as_ref());
+    //     }
+    //     blinked
+    // }
+
+    pub fn blink_one_recursively(&self, stone: usize, times: usize) -> usize {
+        let blinked = match self.blink_one(stone) {
+            Hit(lut_ret) => lut_ret,
+            Missed(calculated) => &{ calculated },
+        };
+
+        if times == 1 {
+            return blinked.len();
+        }
+
+        blinked.into_iter()
+            .map(|&stone| self.blink_one_recursively(stone, times - 1))
+            .fold(0, |acc, x| acc + x)
+    }
+}
+
+pub enum LutBlinkResult<'a> {
+    Hit(&'a Stones),
+    Missed(Stones),
 }
 
 struct LutInitProgress {

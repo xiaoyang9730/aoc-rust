@@ -1,4 +1,4 @@
-use super::{lut::Lut, Stones};
+use super::Stones;
 use super::utils::digits;
 
 fn one(stone: usize) -> Stones {
@@ -19,47 +19,6 @@ pub fn all(stones: &[usize]) -> Stones {
     let mut blinked = vec![];
     for &stone in stones {
         blinked.extend(one(stone));
-    }
-    blinked
-}
-
-pub fn recursive_one_len(lut: &'static Lut, stone: usize, times: usize) -> usize {
-    let next = match lut.table.get(stone as usize) {
-        Some(result) => result,
-        None => &{
-            let mut stones = vec![stone];
-            for _ in 0..lut.step {
-                stones = all(&stones);
-            }
-            stones
-        },
-    };
-
-    if times == 1 {
-        return next.len();
-    }
-
-    let mut len = 0;
-    for &stone in next {
-        len += recursive_one_len(lut, stone, times - 1);
-    }
-    len
-}
-
-pub fn lut_blink_single(lut: &Lut, stone: usize) -> Stones {
-    lut.table.get(stone as usize).cloned().unwrap_or({
-        let mut blinked = vec![stone];
-        for _ in 0..lut.step {
-            blinked = all(&blinked);
-        }
-        blinked
-    })
-}
-
-pub fn lut_blink_all(lut: &Lut, stones: &Stones) -> Stones {
-    let mut blinked = vec![];
-    for &stone in stones {
-        blinked.extend(lut_blink_single(lut, stone));
     }
     blinked
 }

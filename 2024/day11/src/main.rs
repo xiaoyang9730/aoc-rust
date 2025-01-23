@@ -26,10 +26,15 @@ fn main() {
 
     const PRE_ROUNDS: usize = 3;
 
-    for _ in 0..PRE_ROUNDS {
-        stones = unsafe { blink::lut_blink_all(&lut::LUT, &stones) };
+    // for _ in 0..PRE_ROUNDS {
+    //     stones = unsafe { lut::LUT.blink_all(&stones) };
+    //     println!("stage 1 len: {}", stones.len());
+    // }
+    for _ in 0..PRE_ROUNDS * 5 {
+        stones = blink::all(&stones);
         println!("stage 1 len: {}", stones.len());
     }
+    println!("stage 1 time elapsed {}s", now.elapsed().as_secs_f32());
 
     // Stage 2.0
 
@@ -63,10 +68,8 @@ fn main() {
     for (i_batch, batch) in batches.into_iter().enumerate() {
         let handle = thread::spawn(move || {
             let mut thread_result = vec![];
-            // let mut batch_total = 0;
             for (i_stone, stone) in batch.into_iter().enumerate() {
-                let count = unsafe { blink::recursive_one_len(&lut::LUT, stone, 12 - PRE_ROUNDS) };
-                // batch_total += count;
+                let count = unsafe { lut::LUT.blink_one_recursively(stone, 12 - PRE_ROUNDS) };
                 thread_result.push((stone, count));
                 println!("batch: {i_batch:>2},  stone: {i_stone:>3},  count: {count:>12},  time: {}s", now.elapsed().as_secs_f32());
             }
