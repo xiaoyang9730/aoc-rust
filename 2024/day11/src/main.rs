@@ -2,6 +2,7 @@ use std::env::args;
 use std::io::read_to_string;
 use std::fs::File;
 use std::thread;
+use std::collections::HashMap;
 
 mod blink;
 mod utils;
@@ -117,9 +118,22 @@ fn main() {
         println!("stage 1 len: {}", stones.len());
     }
 
-    // Stage 2
+    // Stage 2.0
 
-    const THREADS: usize = 24;
+    let mut repetition_count = HashMap::new();
+    for stone in &stones {
+        match repetition_count.get_mut(stone) {
+            Some(count) => { *count += 1; },
+            None => { repetition_count.insert(*stone, 1); },
+        }
+    }
+
+    let mut stones = repetition_count.keys().map(|s| *s).collect::<Vec<u64>>();
+    println!("after repetition_count, stones: {}", stones.len());
+
+    // Stage 2.1
+
+    const THREADS: usize = 17;
     
     let mut total = 0;
     let mut handles = vec![];
@@ -135,19 +149,25 @@ fn main() {
 
     for (i_batch, batch) in batches.into_iter().enumerate() {
         let handle = thread::spawn(move || {
-            let mut batch_total = 0;
+            let mut thread_result = vec![];
+            // let mut batch_total = 0;
             for (i_stone, stone) in batch.into_iter().enumerate() {
-                let count = unsafe { blink::recursive_one_len(&LUT, stone, 9 - PRE_ROUNDS) };
-                batch_total += count;
-                println!("batch: {i_batch:>2},  stone: {i_stone:>3},  count: {count:>12},  batch_total: {batch_total:>12},  time: {}s", now.elapsed().as_secs_f32());
+                let count = unsafe { blink::recursive_one_len(&LUT, stone, 15 - PRE_ROUNDS) };
+                // batch_total += count;
+                thread_result.push((stone, count));
+                println!("batch: {i_batch:>2},  stone: {i_stone:>3},  count: {count:>12},  time: {}s", now.elapsed().as_secs_f32());
             }
-            batch_total
+            thread_result
         });
         handles.push(handle);
         println!("spawned batch: {i_batch:>2}");
     }
+    let mut counts = vec![];
     for handle in handles {
-        total += handle.join().unwrap();
+        counts.extend(handle.join().unwrap());
+    }
+    for (stone, count) in counts {
+        total += count * repetition_count.get(&stone).unwrap();
     }
     println!("total: {}", total);
     println!("Calculation time: {}", now.elapsed().as_secs_f32());
