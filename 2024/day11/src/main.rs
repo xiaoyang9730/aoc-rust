@@ -78,13 +78,15 @@ fn mt_create_lut(step: usize, lut_size: usize, thread_num: usize) -> Lut {
     lut
 }
 
+static mut LUT: Lut = Lut { step: 5, table: Vec::new() };
+
 fn main() {
     let filename = args().skip(1).next().unwrap();
     let input = read_to_string(File::open(filename).unwrap()).unwrap();
 
     // Iterate vs. Recursive
 
-    let stones = utils::parse(&input);
+    let mut stones = utils::parse(&input);
     // // for _ in 0..45 {
     // //     stones = blink::all(stones);
     // // }
@@ -98,17 +100,54 @@ fn main() {
 
     let now = std::time::Instant::now();
     // let lut = utils::create_lut(15, 0..100_000);
-    let lut = mt_create_lut(5, 60_000_000, 20);
+    // let lut = mt_create_lut(5, 60_000_000, 25);
+    unsafe { LUT = mt_create_lut(5, 60_000_000, 25) };
     println!("LUT creation time: {}", now.elapsed().as_secs_f32());
 
     let now = std::time::Instant::now();
     // println!("total: {}", solve(&lut, &stones, 45));
     // println!("total: {}", blink::recursive_len(&stones, 45));
+
+    // Stage 1
+
+    const PRE_ROUNDS: usize = 3;
+
+    for _ in 0..PRE_ROUNDS {
+        stones = unsafe { blink::lut_blink_all(&LUT, &stones) };
+        println!("stage 1 len: {}", stones.len());
+    }
+
+    // Stage 2
+
+    const THREADS: usize = 24;
+    
     let mut total = 0;
-    for stone in stones {
-        let result = blink::recursive_one_len(&lut, stone, 15);
-        total += result;
-        println!("{stone:>7} |  len: {result:>12} |  total: {total:>12} |  time: {}s", now.elapsed().as_secs_f32());
+    let mut handles = vec![];
+
+    let batch_size = stones.len() / THREADS;
+    println!("threads = {THREADS}, batch_size = {batch_size}, remaining = {}", stones.len() % THREADS);
+    let mut batches = vec![];
+    while stones.len() > batch_size {
+        batches.push(stones.split_off(stones.len() - batch_size));
+    }
+    batches.push(stones);
+    println!("splitted into {} batches", batches.len());
+
+    for (i_batch, batch) in batches.into_iter().enumerate() {
+        let handle = thread::spawn(move || {
+            let mut batch_total = 0;
+            for (i_stone, stone) in batch.into_iter().enumerate() {
+                let count = unsafe { blink::recursive_one_len(&LUT, stone, 9 - PRE_ROUNDS) };
+                batch_total += count;
+                println!("batch: {i_batch:>2},  stone: {i_stone:>3},  count: {count:>12},  batch_total: {batch_total:>12},  time: {}s", now.elapsed().as_secs_f32());
+            }
+            batch_total
+        });
+        handles.push(handle);
+        println!("spawned batch: {i_batch:>2}");
+    }
+    for handle in handles {
+        total += handle.join().unwrap();
     }
     println!("total: {}", total);
     println!("Calculation time: {}", now.elapsed().as_secs_f32());

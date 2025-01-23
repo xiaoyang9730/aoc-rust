@@ -43,7 +43,7 @@ pub fn all(stones: &[u64]) -> Stones {
 //     return recursive_len(&stones[..sep], times) + recursive_len(&stones[sep..], times);
 // }
 
-pub fn recursive_one_len(lut: &Lut, stone: u64, times: usize) -> usize {
+pub fn recursive_one_len(lut: &'static Lut, stone: u64, times: usize) -> usize {
     let next = match lut.table.get(stone as usize) {
         Some(result) => result,
         None => &{
@@ -96,23 +96,23 @@ pub fn recursive_one_len(lut: &Lut, stone: u64, times: usize) -> usize {
 //     stones
 // }
 
-// pub fn lut_blink_single(lut: &Lut, stone: u64) -> Stones {
-//     lut.table.get(stone as usize).cloned().unwrap_or({
-//         let mut blinked = vec![stone];
-//         for _ in 0..lut.step {
-//             blinked = all(blinked);
-//         }
-//         blinked
-//     })
-// }
+pub fn lut_blink_single(lut: &Lut, stone: u64) -> Stones {
+    lut.table.get(stone as usize).cloned().unwrap_or({
+        let mut blinked = vec![stone];
+        for _ in 0..lut.step {
+            blinked = all(&blinked);
+        }
+        blinked
+    })
+}
 
-// pub fn lut_blink_all(lut: &Lut, stones: &Stones) -> Stones {
-//     let mut blinked = vec![];
-//     for &stone in stones {
-//         blinked.extend(lut_blink_single(lut, stone));
-//     }
-//     blinked
-// }
+pub fn lut_blink_all(lut: &Lut, stones: &Stones) -> Stones {
+    let mut blinked = vec![];
+    for &stone in stones {
+        blinked.extend(lut_blink_single(lut, stone));
+    }
+    blinked
+}
 
 #[cfg(test)]
 mod tests {
