@@ -16,11 +16,9 @@ fn one(stone: usize) -> Stones {
 }
 
 pub fn all(stones: &[usize]) -> Stones {
-    let mut blinked = vec![];
-    for &stone in stones {
-        blinked.extend(one(stone));
-    }
-    blinked
+    stones.into_iter()
+        .map(|&stone| one(stone))
+        .fold(vec![], |mut acc, x| { acc.extend(x); acc })
 }
 
 #[cfg(test)]
