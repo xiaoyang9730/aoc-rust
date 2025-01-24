@@ -52,11 +52,8 @@ impl Lut {
         if let Some(lut_ret) = self.table.get(stone) {
             return Hit(lut_ret);
         }
-        let mut blinked = vec![stone];
-        for _ in 0..self.step {
-            blinked = blink::all(&blinked);
-        }
-        Missed(blinked)
+        let calculated = utils::repeat(blink::all, vec![stone], self.step);
+        Missed(calculated)
     }
 
     // pub fn blink_all(&self, stones: &Stones) -> Stones {
