@@ -61,6 +61,7 @@ impl Stage2 {
     fn batch(mut stones: Stones, threads: usize) -> Batches {
         // TODO
         let batch_size = (stones.len() as f32 / threads as f32).ceil() as usize;
+        println!("batch size: {batch_size}");
 
         let mut batches = vec![];
         while stones.len() > batch_size {
