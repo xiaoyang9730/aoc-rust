@@ -1,48 +1,18 @@
 use std::env::args;
 use std::fs::File;
 use std::io::read_to_string;
+use std::thread;
 
 mod blink;
 mod lut;
 mod solution;
 mod utils;
 
+use lut::{Lut, LUT};
+
+const STAGE1_ITERS: usize = 15;
+
 type Stones = Vec<usize>;
-
-// struct Solution {
-//     stones: Stones,
-//     time: Instant,
-// }
-
-// impl Solution {
-//     fn new(input: String) -> Self {
-//         Self { stones: utils::parse(&input), time: Instant::now() }
-//     }
-
-//     fn stage_1(&self) {
-//         const PRE_ITERS: usize = 15;
-
-//         let result = utils::repeat(blink::all, self.stones.clone(), PRE_ITERS);
-//         println!("stage 1:  {}, time elapsed {}s", result.len(), self.time.elapsed().as_secs_f32());
-//     }
-
-//     fn stage_2(&self) {
-
-//     }
-
-//     fn find_redundant() {
-//         // let mut repetition_count = HashMap::new();
-//         // for stone in &stones {
-//         //     match repetition_count.get_mut(stone) {
-//         //         Some(count) => { *count += 1; },
-//         //         None => { repetition_count.insert(*stone, 1); },
-//         //     }
-//         // }
-
-//         // let mut stones = repetition_count.keys().map(|s| *s).collect::<Vec<usize>>();
-//         // println!("after repetition_count, stones: {}", stones.len());
-//     }
-// }
 
 fn main() {
     let filename = args().skip(1).next().unwrap();
@@ -50,79 +20,16 @@ fn main() {
 
     let stones = utils::parse(&input);
 
-    println!("result: {}", solution::solve(stones));
+    // Initialize LUT, while doing stage 1 calculation
 
-    
+    let init_lut = thread::spawn(|| Lut::new(5, 60_000_000, 30));
+    let stage_1 = solution::Stage1::run(stones, STAGE1_ITERS);
+    unsafe { LUT = init_lut.join().unwrap() };
 
-    // let now = std::time::Instant::now();
-    // unsafe { lut::LUT = lut::Lut::new(5, 60_000_000, 25) };
-    // println!("LUT creation time: {}", now.elapsed().as_secs_f32());
+    // Stage 2 calculation
 
-    // let now = std::time::Instant::now();
-
-    // // Stage 1
-
-    // const PRE_ROUNDS: usize = 3;
-
-    // // for _ in 0..PRE_ROUNDS {
-    // //     stones = unsafe { lut::LUT.blink_all(&stones) };
-    // //     println!("stage 1 len: {}", stones.len());
-    // // }
-    // for _ in 0..PRE_ROUNDS * 5 {
-    //     stones = blink::all(&stones);
-    //     println!("stage 1 len: {}", stones.len());
-    // }
-    // println!("stage 1 time elapsed {}s", now.elapsed().as_secs_f32());
-
-    // Stage 2.0
-
-    // let mut repetition_count = HashMap::new();
-    // for stone in &stones {
-    //     match repetition_count.get_mut(stone) {
-    //         Some(count) => { *count += 1; },
-    //         None => { repetition_count.insert(*stone, 1); },
-    //     }
-    // }
-
-    // let mut stones = repetition_count.keys().map(|s| *s).collect::<Vec<usize>>();
-    // println!("after repetition_count, stones: {}", stones.len());
-
-    // Stage 2.1
-
-    // const THREADS: usize = 17;
-    
-    // let mut total = 0;
-    // let mut handles = vec![];
-
-    // let batch_size = stones.len() / THREADS;
-    // println!("threads = {THREADS}, batch_size = {batch_size}, remaining = {}", stones.len() % THREADS);
-    // let mut batches = vec![];
-    // while stones.len() > batch_size {
-    //     batches.push(stones.split_off(stones.len() - batch_size));
-    // }
-    // batches.push(stones);
-    // println!("splitted into {} batches", batches.len());
-
-    // for (i_batch, batch) in batches.into_iter().enumerate() {
-    //     let handle = thread::spawn(move || {
-    //         let mut thread_result = vec![];
-    //         for (i_stone, stone) in batch.into_iter().enumerate() {
-    //             let count = unsafe { lut::LUT.blink_one_recursively(stone, 12 - PRE_ROUNDS) };
-    //             thread_result.push((stone, count));
-    //             println!("batch: {i_batch:>2},  stone: {i_stone:>3},  count: {count:>12},  time: {}s", now.elapsed().as_secs_f32());
-    //         }
-    //         thread_result
-    //     });
-    //     handles.push(handle);
-    //     println!("spawned batch: {i_batch:>2}");
-    // }
-    // let mut counts = vec![];
-    // for handle in handles {
-    //     counts.extend(handle.join().unwrap());
-    // }
-    // for (stone, count) in counts {
-    //     total += count * repetition_count.get(&stone).unwrap();
-    // }
-    // println!("total: {}", total);
-    // println!("Calculation time: {}", now.elapsed().as_secs_f32());
+    let now = std::time::Instant::now();
+    println!("part 1: {}", solution::Stage2::run(&stage_1, 25 - STAGE1_ITERS, 17));
+    println!("part 2: {}", solution::Stage2::run(&stage_1, 75 - STAGE1_ITERS, 17));
+    println!("time for part 1 & part 2 stage 2: {}s", now.elapsed().as_secs_f32());
 }
