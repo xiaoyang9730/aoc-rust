@@ -68,29 +68,75 @@ fn parse(input: String) -> Vec<Region> {
     regions
 }
 
-fn sides_of(region: &Region) -> u32 {
-    let mut sides = 0;
-    for &plot in region.iter() {
-        sides += 4;
-        if region.contains(&(plot + Pos::UP)) {
-            sides -= 1;
-        }
-        if region.contains(&(plot + Pos::DOWN)) {
-            sides -= 1;
-        }
-        if region.contains(&(plot + Pos::LEFT)) {
-            sides -= 1;
-        }
-        if region.contains(&(plot + Pos::RIGHT)) {
-            sides -= 1;
-        }
-    }
-    sides
+fn part_1_price_of(regions: &Vec<Region>) -> u32 {
+    regions.iter()
+        .map(|r| {
+            let area = r.len() as u32;
+            let mut sides = 0;
+            for &plot in r.iter() {
+                sides += 4;
+                if r.contains(&(plot + Pos::UP)) {
+                    sides -= 1;
+                }
+                if r.contains(&(plot + Pos::DOWN)) {
+                    sides -= 1;
+                }
+                if r.contains(&(plot + Pos::LEFT)) {
+                    sides -= 1;
+                }
+                if r.contains(&(plot + Pos::RIGHT)) {
+                    sides -= 1;
+                }
+            }
+            sides * area
+        })
+        .fold(0, |acc, x| acc + x)
 }
 
-fn price_of(regions: &Vec<Region>) -> u32 {
+fn part_2_price_of(regions: &Vec<Region>) -> u32 {
     regions.iter()
-        .map(|r| sides_of(r) * r.len() as u32)
+        .map(|r| {
+            let area = r.len() as u32;
+
+            let (mut hu_sides, mut hd_sides, mut vl_sides, mut vr_sides) = (HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new());
+            for &plot in r.iter() {
+                if !r.contains(&(plot + Pos::UP)) {
+                    hu_sides.insert(plot);
+                }
+                if !r.contains(&(plot + Pos::DOWN)) {
+                    hd_sides.insert(plot + Pos::DOWN);
+                }
+                if !r.contains(&(plot + Pos::LEFT)) {
+                    vl_sides.insert(plot);
+                }
+                if !r.contains(&(plot + Pos::RIGHT)) {
+                    vr_sides.insert(plot + Pos::RIGHT);
+                }
+            }
+
+            let mut sides = 0;
+            for &side in hu_sides.iter() {
+                if !hu_sides.contains(&(side + Pos::LEFT)) {
+                    sides += 1;
+                }
+            }
+            for &side in hd_sides.iter() {
+                if !hd_sides.contains(&(side + Pos::LEFT)) {
+                    sides += 1;
+                }
+            }
+            for &side in vl_sides.iter() {
+                if !vl_sides.contains(&(side + Pos::UP)) {
+                    sides += 1;
+                }
+            }
+            for &side in vr_sides.iter() {
+                if !vr_sides.contains(&(side + Pos::UP)) {
+                    sides += 1;
+                }
+            }
+            sides * area
+        })
         .fold(0, |acc, x| acc + x)
 }
 
@@ -99,5 +145,6 @@ fn main() {
     let input = read_to_string(File::open(filename).unwrap()).unwrap();
 
     let regions = parse(input);
-    println!("part 1: {}", price_of(&regions));
+    println!("part 1: {}", part_1_price_of(&regions));
+    println!("part 2: {}", part_2_price_of(&regions));
 }
