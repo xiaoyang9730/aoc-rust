@@ -3,8 +3,8 @@ use std::fs::read_to_string;
 
 #[derive(Clone, Copy, Debug)]
 struct Pos {
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -36,7 +36,7 @@ fn parse(input: String) -> Vec<ClawMachine> {
     }
 }
 
-fn solve(&ClawMachine { btn_a, btn_b, prize }: &ClawMachine) -> Option<usize> {
+fn solve(&ClawMachine { btn_a, btn_b, prize }: &ClawMachine) -> Option<isize> {
     let mut minimum = None;
     for na in 0..=100 {
         if btn_a.x * na > prize.x {
@@ -63,6 +63,36 @@ fn solve(&ClawMachine { btn_a, btn_b, prize }: &ClawMachine) -> Option<usize> {
     Some(minimum?.0 * 3 + minimum?.1)
 }
 
+fn solve_2(&ClawMachine { btn_a, btn_b, prize }: &ClawMachine) -> Option<isize> {
+    let mut minimum = None;
+    let prize_fixed = Pos { x: prize.x + 10000000000000, y: prize.y + 10000000000000 };
+
+    let denominator = btn_b.y * btn_a.x - btn_a.y * btn_b.x;
+    let guess_a = (prize_fixed.x * btn_b.y - prize_fixed.y * btn_b.x) / denominator;
+    // let guess_b = (prize.y * btn_a.x - prize.x * btn_a.y) / denominator;
+
+    for na in guess_a - prize.x .. guess_a + prize.x {
+        if btn_a.x * na > prize_fixed.x {
+            continue;
+        }
+        let nb = (prize_fixed.x - btn_a.x * na) / btn_b.x;
+        if btn_a.x * na + btn_b.x * nb == prize_fixed.x && btn_a.y * na + btn_b.y * nb == prize_fixed.y {
+            //calculate prize
+            minimum = match minimum {
+                None => Some((na, nb)),
+                Some((ma, mb)) => {
+                    if ma * 3 + mb > na * 3 + nb {
+                        Some((na, nb))
+                    } else {
+                        minimum
+                    }
+                }
+            };
+        }
+    }
+    Some(minimum?.0 * 3 + minimum?.1)
+}
+
 fn main() {
     let filename = args().skip(1).next().unwrap();
     let input = read_to_string(filename).unwrap();
@@ -70,4 +100,10 @@ fn main() {
     let claw_machines = parse(input);
     let result = claw_machines.iter().map(|cm| solve(cm).unwrap_or(0)).fold(0, |acc, x| acc + x);
     println!("part 1: {result}");
+    let result = claw_machines.iter().map(|cm| solve_2(cm).unwrap_or(0)).fold(0, |acc, x| acc + x);
+    println!("part 2: {result}");
 }
+
+// dinominator = (btn_b.y * btn_a.x - btn_a.y * btn_b.x)
+// a = (prize.x * btn_b.y - prize.y * btn_b.x) / dinominator
+// b = (prize.y * btn_a.x - prize.x * btn_a.y) / dinominator
